@@ -8,6 +8,7 @@ import CandidateList from './pages/CandidateList';
 import PlatformSettings from './pages/PlatformSettings';
 import AppHeader from './components/AppHeader';
 import AppSidebar from './components/AppSidebar';
+import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
 const { Content } = Layout;
@@ -31,21 +32,23 @@ const App: React.FC = () => {
             <Route
               path="/"
               element={
-                <Layout style={{ minHeight: '100vh' }}>
-                  <AppSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-                  <Layout>
-                    <AppHeader collapsed={collapsed} setCollapsed={setCollapsed} />
-                    <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}>
-                      <Routes>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/tasks" element={<TaskManagement />} />
-                        <Route path="/candidates" element={<CandidateList />} />
-                        <Route path="/settings" element={<PlatformSettings />} />
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                      </Routes>
-                    </Content>
+                <PrivateRoute>
+                  <Layout style={{ minHeight: '100vh' }}>
+                    <AppSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+                    <Layout>
+                      <AppHeader collapsed={collapsed} setCollapsed={setCollapsed} />
+                      <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}>
+                        <Routes>
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/tasks" element={<TaskManagement />} />
+                          <Route path="/candidates" element={<CandidateList />} />
+                          <Route path="/settings" element={<PlatformSettings />} />
+                          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        </Routes>
+                      </Content>
+                    </Layout>
                   </Layout>
-                </Layout>
+                </PrivateRoute>
               }
             />
           </Routes>

@@ -40,5 +40,5 @@ body {
 }
 
 .header-right {
-  color: white;
+  /* 移除白色文本颜色，避免在白色背景上不可见 */
 }

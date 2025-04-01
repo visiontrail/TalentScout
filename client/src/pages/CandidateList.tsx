@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Paragraph, Text } = Typography;
-const { Option } = Select;
+// 移除 const { Option } = Select; 因为我们将使用 options 属性
 const { Search } = Input;
 
 interface Candidate {
@@ -274,14 +274,14 @@ const CandidateList: React.FC = () => {
             placeholder="按平台筛选"
             value={platformFilter}
             onChange={(value) => setPlatformFilter(value)}
-          >
-            <Option value="all">全部平台</Option>
-            {platforms.map((platform) => (
-              <Option key={platform} value={platform}>
-                {platform}
-              </Option>
-            ))}
-          </Select>
+            options={[
+              { value: 'all', label: '全部平台' },
+              ...platforms.map((platform) => ({
+                value: platform,
+                label: platform
+              }))
+            ]}
+          />
         </Col>
         <Col span={8}>
           <Select
@@ -289,12 +289,13 @@ const CandidateList: React.FC = () => {
             placeholder="按评分筛选"
             value={scoreFilter}
             onChange={(value) => setScoreFilter(value)}
-          >
-            <Option value="all">全部评分</Option>
-            <Option value="high">优秀 (≥90)</Option>
-            <Option value="medium">良好 (75-89)</Option>
-            <Option value="low">一般 (<75)</Option>
-          </Select>
+            options={[
+              { value: 'all', label: '全部评分' },
+              { value: 'high', label: '优秀 (≥90)' },
+              { value: 'medium', label: '良好 (75-89)' },
+              { value: 'low', label: '一般 (<75)' }
+            ]}
+          />
         </Col>
       </Row>
 
