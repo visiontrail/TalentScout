@@ -62,9 +62,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post('http://localhost:8000/api/login', {
-        username,
-        password,
+      // 使用FormData格式发送请求，符合OAuth2的要求
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('password', password);
+      
+      const response = await axios.post('http://localhost:8000/api/login', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       const { access_token } = response.data;

@@ -3,6 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import auth, users, ai
 from app.core.config import settings
+from app.models.models import Base
+from app.db.database import engine
+
+# 确保数据库表存在
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="TalentScout API",

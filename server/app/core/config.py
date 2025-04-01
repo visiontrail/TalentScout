@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # 数据库配置
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./talentscout.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./talentscout.db?check_same_thread=False")
     
     # AI模型配置
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
