@@ -36,7 +36,7 @@ function log(level, message) {
       fs.mkdirSync(logDir, { recursive: true });
     }
     fs.appendFileSync(logFile, logMessage + '\n');
-    console.log(`日志已写入: ${logFile}`);
+    // console.log(`日志已写入: ${logFile}`);
   } catch (error) {
     console.error('写入日志文件失败:', error);
   }
@@ -150,7 +150,7 @@ ipcMain.handle('start-crawler', async (event, { platform, jobDescription }) => {
     switch (platform) {
       case 'boss':
         // BOSS直聘爬虫逻辑
-        await page.goto('https://www.zhipin.com/login');
+        await page.goto('https://www.zhipin.com/web');
         // 登录逻辑...
         // 搜索逻辑...
         break;
@@ -347,9 +347,8 @@ ipcMain.handle('start-mcp-crawler', async (event, { taskName, jobDescription, ap
     const systemPrompt = `你是一个专业的招聘爬虫助手，你需要帮助用户从招聘网站获取候选人信息。
 根据用户提供的职位描述，你需要：
 1. 使用playwright工具打开浏览器并访问招聘网站
-2. 协助用户完成登录（用户会在浏览器中手动输入账号密码）
-3. 搜索合适的候选人
-4. 收集候选人信息
+2. 搜索合适的候选人
+3. 收集候选人信息
 
 请逐步执行，确保在每个步骤都清楚地告诉用户当前正在做什么以及需要用户做什么。`;
 
@@ -467,7 +466,7 @@ ipcMain.handle('login-platform', async (event, { platform }) => {
     let loginUrl = '';
     switch (platform) {
       case 'boss':
-        loginUrl = 'https://www.zhipin.com/login';
+        loginUrl = 'https://www.zhipin.com/sem/10.html?sid=sem_pz_bdpc_dasou_title';
         break;
       case 'zhilian':
         loginUrl = 'https://passport.zhaopin.com/login';
@@ -543,14 +542,14 @@ ipcMain.handle('login-platform', async (event, { platform }) => {
     store.set(platformKey, cookies);
     
     // 截图保存登录状态
-    const screenshotDir = path.join(os.homedir(), '.talentscout', 'screenshots');
-    if (!fs.existsSync(screenshotDir)) {
-      fs.mkdirSync(screenshotDir, { recursive: true });
-    }
+    // const screenshotDir = path.join(os.homedir(), '.talentscout', 'screenshots');
+    // if (!fs.existsSync(screenshotDir)) {
+    //   fs.mkdirSync(screenshotDir, { recursive: true });
+    // }
     
-    const screenshotPath = path.join(screenshotDir, `${platform}-login-${Date.now()}.png`);
-    await page.screenshot({ path: screenshotPath, fullPage: true });
-    log('INFO', `已保存登录状态截图: ${screenshotPath}`);
+    // const screenshotPath = path.join(screenshotDir, `${platform}-login-${Date.now()}.png`);
+    // await page.screenshot({ path: screenshotPath, fullPage: true });
+    // log('INFO', `已保存登录状态截图: ${screenshotPath}`);
     
     // 关闭浏览器
     log('INFO', '关闭浏览器');

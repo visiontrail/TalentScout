@@ -71,4 +71,5 @@ python3 main.py
 ```shell
 cd client
 npm run start
+npm run electron:dev # 开发环境
 ```
