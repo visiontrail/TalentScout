@@ -202,245 +202,49 @@ ipcMain.handle('start-mcp-crawler', async (event, { taskName, jobDescription, ap
   try {
     log('INFO', `开始为任务 "${taskName}" 启动MCP爬虫`);
     
-    // 设置DeepSeek API配置
-    const deepSeekConfig = {
-      apiKey: apiKey || 'sk-pbxwzbwsubwzmtsfusculgwzypxivjxdtvwuioxfemsejyrf', // 使用传入的API密钥或默认值
-      baseUrl: 'https://api.deepseek.com'
-    };
-    log('INFO', `DeepSeek API配置完成，使用API: ${deepSeekConfig.apiKey.substring(0, 5)}...`);
-
-    // 设置MCP爬虫的Playwright配置
-    const mcpPlaywrightConfig = {
-      autoApprove: [
-        "start_codegen_session",
-        "end_codegen_session",
-        "get_codegen_session",
-        "clear_codegen_session",
-        "playwright_navigate",
-        "playwright_screenshot",
-        "playwright_click",
-        "playwright_iframe_click",
-        "playwright_fill",
-        "playwright_select",
-        "playwright_hover",
-        "playwright_evaluate",
-        "playwright_console_logs",
-        "playwright_close",
-        "playwright_get",
-        "playwright_post",
-        "playwright_put",
-        "playwright_patch",
-        "playwright_delete",
-        "playwright_expect_response",
-        "playwright_assert_response",
-        "playwright_custom_user_agent",
-        "playwright_get_visible_text",
-        "playwright_get_visible_html",
-        "playwright_go_back",
-        "playwright_go_forward",
-        "playwright_drag",
-        "playwright_press_key",
-        "playwright_save_as_pdf",
-        "browserbase_create_session"
-      ],
-      disabled: false,
-      timeout: 60,
-      command: 'npx',
-      args: ['-y', '@executeautomation/playwright-mcp-server'],
-      env: {
-        // 设置为非无头模式，让用户可以看到浏览器
-        PLAYWRIGHT_HEADLESS: 'false',
-        // 为确保正确在macOS上运行，设置PATH
-        PATH: process.env.PATH
-      },
-      transportType: 'stdio'
-    };
-    log('INFO', `MCP Playwright配置完成`);
-
-    // 检查是否有npx命令
-    try {
-      log('INFO', `检查是否安装了npx...`);
-      const { execSync } = require('child_process');
-      execSync('which npx', { stdio: 'ignore' });
-      log('INFO', `npx命令可用`);
-    } catch (error) {
-      log('ERROR', `未找到npx命令，请确保已安装Node.js: ${error.message}`);
-      return { success: false, error: `未找到npx命令，请确保已安装Node.js` };
-    }
-
-    // 启动MCP Server
-    log('INFO', '启动MCP Playwright服务...');
-    log('INFO', `执行命令: ${mcpPlaywrightConfig.command} ${mcpPlaywrightConfig.args.join(' ')}`);
+    // 使用Python脚本路径
+    // const pythonScriptPath = path.join(__dirname, 'mcp_crawler.py');
     
-    const mcpProcess = spawn(
-      mcpPlaywrightConfig.command,
-      mcpPlaywrightConfig.args,
-      {
-        env: { ...process.env, ...mcpPlaywrightConfig.env },
-        shell: true
-      }
-    );
+    // 调用Python脚本
+    // const pythonProcess = spawn('python3', [
+    //   pythonScriptPath,
+    //   `--task_name=${taskName}`,
+    //   `--job_description=${JSON.stringify(jobDescription)}`,
+    //   `--api_key=${apiKey}`
+    // ]);
 
-    // 捕获和记录MCP服务的输出
-    let mcpOutput = '';
-    mcpProcess.stdout.on('data', (data) => {
-      const output = data.toString();
-      mcpOutput += output;
-      log('INFO', `MCP输出: ${output.trim()}`);
-    });
-
-    mcpProcess.stderr.on('data', (data) => {
-      const output = data.toString();
-      mcpOutput += output;
-      log('ERROR', `MCP错误: ${output.trim()}`);
-    });
-
-    let mcpServerReady = false;
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('启动MCP Server超时')), 30000);
-    });
-
-    // 等待MCP Server启动完成
-    const serverReadyPromise = new Promise((resolve) => {
-      const checkInterval = setInterval(() => {
-        if (mcpOutput.includes('Server started') || mcpOutput.includes('ready')) {
-          clearInterval(checkInterval);
-          mcpServerReady = true;
-          resolve();
-        }
-      }, 500);
-      
-      mcpProcess.on('exit', (code) => {
-        clearInterval(checkInterval);
-        if (!mcpServerReady) {
-          log('ERROR', `MCP进程异常退出，退出码: ${code}，输出: ${mcpOutput}`);
-          resolve(); // 让Promise完成以便我们可以处理错误
-        }
-      });
-    });
-
-    try {
-      // 等待服务器准备好或超时
-      log('INFO', '等待MCP服务启动...');
-      await Promise.race([serverReadyPromise, timeoutPromise]);
-    } catch (error) {
-      log('ERROR', `等待MCP服务启动失败: ${error.message}`);
-      if (mcpProcess) {
-        mcpProcess.kill();
-        log('INFO', 'MCP进程已终止');
-      }
-      return { success: false, error: error.message };
-    }
-
-    if (!mcpServerReady) {
-      log('ERROR', 'MCP Server未能成功启动，检查日志以获取详细信息');
-      if (mcpProcess) {
-        mcpProcess.kill();
-        log('INFO', 'MCP进程已终止');
-      }
-      return { success: false, error: `MCP Server未能成功启动，详细信息: ${mcpOutput}` };
-    }
-
-    log('INFO', 'MCP服务启动成功，准备调用DeepSeek API');
-
-    // 构建与大模型的通信提示词
-    const systemPrompt = `你是一个专业的招聘爬虫助手，你需要帮助用户从招聘网站获取候选人信息。
-根据用户提供的职位描述，你需要：
-1. 使用playwright工具打开浏览器并访问招聘网站
-2. 搜索合适的候选人
-3. 收集候选人信息
-
-请逐步执行，确保在每个步骤都清楚地告诉用户当前正在做什么以及需要用户做什么。`;
-
-    const userPrompt = `我需要招聘"${taskName}"岗位的人才。职位描述如下：
-${jobDescription}
-
-请帮我执行以下步骤：
-1. 打开浏览器访问Boss直聘网站
-2. 等待我在浏览器中完成登录
-3. 搜索符合上述职位描述的候选人
-4. 收集候选人的姓名、工作经验、教育背景等信息`;
-
-    // 使用OpenAI兼容的接口调用DeepSeek模型
-    log('INFO', '正在调用DeepSeek API...');
+    // let resultData = '';
     
-    try {
-      // 动态导入node-fetch (ESM模块)
-      const { default: fetch } = await import('node-fetch');
-      
-      log('INFO', '发送请求到DeepSeek API...');
-      const response = await fetch(deepSeekConfig.baseUrl + '/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${deepSeekConfig.apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          tools: mcpPlaywrightConfig.autoApprove.map(toolName => ({
-            type: 'function',
-            function: { name: toolName }
-          }))
-        })
-      });
+    // 收集Python脚本输出
+    // pythonProcess.stdout.on('data', (data) => {
+    //   resultData += data.toString();
+    // });
 
-      const responseData = await response.json();
-      log('INFO', `DeepSeek API响应状态: ${response.status}`);
-      
-      // 将响应保存到文件以供调试
-      const responseDir = path.join(logDir, 'responses');
-      if (!fs.existsSync(responseDir)) {
-        fs.mkdirSync(responseDir, { recursive: true });
-      }
-      const responseFile = path.join(responseDir, `deepseek-response-${Date.now()}.json`);
-      fs.writeFileSync(responseFile, JSON.stringify(responseData, null, 2));
-      log('INFO', `DeepSeek响应已保存到: ${responseFile}`);
+    // 处理错误输出
+    // pythonProcess.stderr.on('data', (data) => {
+    //   log('ERROR', `Python脚本错误: ${data}`);
+    // });
 
-      // 处理响应结果
-      if (responseData.error) {
-        log('ERROR', `DeepSeek API错误: ${JSON.stringify(responseData.error)}`);
-        if (mcpProcess) {
-          mcpProcess.kill();
-          log('INFO', 'MCP进程已终止');
-        }
-        return { success: false, error: `DeepSeek API错误: ${responseData.error.message}` };
-      }
-
-      // 提取工具调用结果
-      const assistantMessage = responseData.choices?.[0]?.message;
-      log('INFO', `获取到AI助手消息: ${JSON.stringify(assistantMessage).substring(0, 200)}...`);
-
-      // 收集爬取到的候选人信息
-      const candidates = [];
-      // 在实际应用中，这里应该解析工具调用结果并提取候选人信息
-      
-      // 结束MCP进程
-      if (mcpProcess) {
-        mcpProcess.kill();
-        log('INFO', 'MCP进程已终止');
-      }
-
-      return { 
-        success: true, 
-        message: '爬虫任务已完成', 
-        candidates,
-        aiResponse: assistantMessage?.content
-      };
-    } catch (error) {
-      log('ERROR', `调用DeepSeek API失败: ${error.message}`);
-      if (mcpProcess) {
-        mcpProcess.kill();
-        log('INFO', 'MCP进程已终止');
-      }
-      return { success: false, error: `调用DeepSeek API失败: ${error.message}` };
-    }
+    // // 等待Python脚本执行完成
+    // return new Promise((resolve) => {
+    //   pythonProcess.on('close', (code) => {
+    //     if (code === 0) {
+    //       try {
+    //         const result = JSON.parse(resultData);
+    //         log('INFO', `Python脚本执行成功: ${resultData}`);
+    //         resolve({ success: true, ...result });
+    //       } catch (e) {
+    //         log('ERROR', `解析Python输出失败: ${e}`);
+    //         resolve({ success: false, error: '解析Python输出失败' });
+    //       }
+    //     } else {
+    //       log('ERROR', `Python脚本执行失败，退出码: ${code}`);
+    //       resolve({ success: false, error: 'Python脚本执行失败' });
+    //     }
+    //   });
+    // });
   } catch (error) {
-    log('ERROR', `MCP爬虫执行失败: ${error.message}`);
-    console.error('MCP爬虫执行失败:', error);
+    log('ERROR', `启动MCP爬虫失败: ${error}`);
     return { success: false, error: error.message };
   }
 });
