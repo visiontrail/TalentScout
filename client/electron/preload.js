@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // 爬虫操作
   startCrawler: (data) => ipcRenderer.invoke('start-crawler', data),
+  startMcpCrawler: (data) => ipcRenderer.invoke('start-mcp-crawler', data),
   loginPlatform: (data) => ipcRenderer.invoke('login-platform', data),
   searchCandidates: (data) => ipcRenderer.invoke('search-candidates', data),
   getCandidateDetail: (data) => ipcRenderer.invoke('get-candidate-detail', data),
@@ -16,4 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 导出功能
   exportExcel: (data) => ipcRenderer.invoke('export-excel', data),
   exportPdf: (data) => ipcRenderer.invoke('export-pdf', data),
+  
+  // 日志功能
+  logMessage: (data) => ipcRenderer.send('log-message', data),
 });

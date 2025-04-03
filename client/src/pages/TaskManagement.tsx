@@ -3,6 +3,7 @@ import { Table, Button, Modal, Form, Input, Space, Popconfirm, message, Typograp
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -136,16 +137,56 @@ const TaskManagement: React.FC = () => {
     message.success('任务删除成功');
   };
 
-  const startCrawler = async (taskId: number, taskName: string) => {
+  const startCrawler = async (taskId: number, taskName: string, jobDescription: string) => {
     try {
-      message.info(`正在为任务 "${taskName}" 启动爬虫，请在平台设置中确保已配置平台登录信息`);
+      logger.info(`开始为任务 "${taskName}" 启动爬虫`);
+      message.info(`正在为任务 "${taskName}" 启动爬虫，请稍候...`);
       
-      // 在实际应用中，这里应该调用Electron API启动爬虫
-      // 这里只是模拟
-      setTimeout(() => {
-        message.success(`爬虫任务已启动，请稍后查看候选人列表`);
-      }, 2000);
+      // 1. 首先获取服务器返回的API-Key
+      let apiKeyResponse;
+      try {
+        logger.info(`正在获取API密钥...`);
+        // 判断当前是开发环境还是生产环境
+        const isDev = process.env.NODE_ENV === 'development';
+        const baseUrl = isDev ? 'http://localhost:8000' : '';
+        logger.info(`当前环境: ${isDev ? '开发环境' : '生产环境'}, 基础URL: ${baseUrl}`);
+        
+        const response = await axios.get(`${baseUrl}/api/ai/key`);
+        apiKeyResponse = response.data;
+        logger.info(`成功获取API密钥: ${JSON.stringify(apiKeyResponse)}`);
+      } catch (error) {
+        logger.error(`获取API密钥失败: ${error}`);
+        logger.info(`尝试直接使用固定API密钥作为备选方案`);
+        // 如果无法获取API密钥，直接使用固定的DeepSeek API密钥
+        apiKeyResponse = { temp_token: 'sk-pbxwzbwsubwzmtsfusculgwzypxivjxdtvwuioxfemsejyrf' };
+        logger.info(`使用固定API密钥: ${apiKeyResponse.temp_token}`);
+        console.error('获取API密钥失败:', error);
+        message.info('使用备用API密钥继续操作');
+      }
+
+      // 2. 调用MCP Server来处理爬虫任务
+      try {
+        logger.info(`开始启动MCP爬虫...`);
+        const result = await window.electronAPI.startMcpCrawler({
+          taskName,
+          jobDescription,
+          apiKey: apiKeyResponse.temp_token
+        });
+
+        if (result.success) {
+          logger.info(`爬虫任务成功完成: ${JSON.stringify(result)}`);
+          message.success(`爬虫任务已完成，已找到 ${result.candidates?.length || 0} 位候选人`);
+        } else {
+          logger.error(`爬虫任务失败: ${result.error}`);
+          message.error(`爬虫任务失败: ${result.error}`);
+        }
+      } catch (error) {
+        logger.error(`MCP爬虫执行失败: ${error}`);
+        console.error('MCP爬虫执行失败:', error);
+        message.error('爬虫执行失败，请检查平台设置并重试');
+      }
     } catch (error) {
+      logger.error(`启动爬虫失败: ${error}`);
       console.error('启动爬虫失败:', error);
       message.error('启动爬虫失败，请稍后重试');
     }
@@ -186,7 +227,7 @@ const TaskManagement: React.FC = () => {
           <Button 
             type="primary" 
             size="small" 
-            onClick={() => startCrawler(record.id, record.task_name)}
+            onClick={() => startCrawler(record.id, record.task_name, record.job_description)}
           >
             启动爬虫
           </Button>

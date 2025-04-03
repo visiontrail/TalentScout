@@ -10,12 +10,17 @@ import AppHeader from './components/AppHeader';
 import AppSidebar from './components/AppSidebar';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import logger from './utils/logger';
 
 const { Content } = Layout;
 
 // 布局组件
 const AppLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  
+  useEffect(() => {
+    logger.info('渲染AppLayout组件');
+  }, []);
   
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -30,10 +35,25 @@ const AppLayout = () => {
   );
 };
 
+// 简单的首页组件
+const HomePage = () => {
+  useEffect(() => {
+    logger.info('渲染HomePage组件');
+  }, []);
+  
+  return (
+    <div style={{ textAlign: 'center', padding: '50px' }}>
+      <h1>欢迎使用TalentScout</h1>
+      <p>请点击左侧菜单导航到不同功能</p>
+    </div>
+  );
+};
+
 // 路由守卫组件，确保登录状态正确处理
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   console.log("App rendering, authentication status:", isAuthenticated);
+  logger.info(`渲染AppRoutes组件, 认证状态: ${isAuthenticated}`);
 
   return (
     <Routes>
@@ -50,7 +70,7 @@ const AppRoutes = () => {
         <Route path="/tasks" element={<TaskManagement />} />
         <Route path="/candidates" element={<CandidateList />} />
         <Route path="/settings" element={<PlatformSettings />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<HomePage />} />
       </Route>
       
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -60,6 +80,7 @@ const AppRoutes = () => {
 
 const App: React.FC = () => {
   console.log("App component initialized");
+  logger.info("App组件初始化");
   
   return (
     <ConfigProvider

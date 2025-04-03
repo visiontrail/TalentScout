@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import openai
+from openai import OpenAI
 from datetime import datetime, timedelta
 
 from app.db.database import get_db
@@ -38,7 +38,7 @@ async def get_ai_key(current_user: User = Depends(get_current_active_user), db: 
         # 创建一个有效期为1小时的临时密钥
         api_key = ApiKey(
             user_id=current_user.id,
-            api_key=settings.OPENAI_API_KEY,  # 在实际应用中应该使用加密存储
+            api_key=settings.DEEPSEEK_API_KEY,  # 在实际应用中应该使用加密存储
             valid_until=datetime.utcnow() + timedelta(hours=1)
         )
         db.add(api_key)
@@ -60,8 +60,11 @@ async def score_resume(
     # 例如检查用户的订阅级别或API使用配额
     
     try:
-        # 设置OpenAI API密钥
-        openai.api_key = settings.OPENAI_API_KEY
+        # 创建DeepSeek客户端（使用OpenAI兼容接口）
+        client = OpenAI(
+            api_key=settings.DEEPSEEK_API_KEY,
+            base_url=settings.DEEPSEEK_BASE_URL
+        )
         
         # 构建提示
         prompt = f"""请根据以下职位描述评估候选人简历，给出0-100的匹配分数和简要分析：
@@ -77,8 +80,8 @@ async def score_resume(
         分析：[简要分析候选人与职位的匹配度，不超过200字]
         """
         
-        # 调用OpenAI API
-        response = openai.ChatCompletion.create(
+        # 调用DeepSeek API
+        response = client.chat.completions.create(
             model=settings.AI_MODEL,
             messages=[
                 {"role": "system", "content": "你是一个专业的招聘顾问，擅长评估候选人与职位的匹配度。"},

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Layout, Button, Dropdown, Space } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 
 const { Header } = Layout;
 
@@ -13,6 +14,10 @@ interface AppHeaderProps {
 const AppHeader: React.FC<AppHeaderProps> = ({ collapsed, setCollapsed }) => {
   const { user, logout } = useAuth();
 
+  useEffect(() => {
+    logger.info('渲染AppHeader组件');
+  }, []);
+
   const menuItems = [
     {
       key: '1',
@@ -23,7 +28,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({ collapsed, setCollapsed }) => {
       key: '2',
       icon: <LogoutOutlined />,
       label: '退出登录',
-      onClick: logout,
+      onClick: () => {
+        logger.info('用户点击退出登录');
+        logout();
+      },
     },
   ];
 

@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./talentscout.db?check_same_thread=False")
     
     # AI模型配置
-    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
-    AI_MODEL: str = os.getenv("AI_MODEL", "gpt-3.5-turbo")
+    DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY", "sk-pbxwzbwsubwzmtsfusculgwzypxivjxdtvwuioxfemsejyrf")
+    DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    AI_MODEL: str = os.getenv("AI_MODEL", "deepseek-chat")
     
     # CORS配置
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]

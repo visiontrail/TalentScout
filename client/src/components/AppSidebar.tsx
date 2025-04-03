@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Layout, Menu } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -7,6 +7,7 @@ import {
   TeamOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import logger from '../utils/logger';
 
 const { Sider } = Layout;
 
@@ -17,6 +18,10 @@ interface AppSidebarProps {
 
 const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed, setCollapsed }) => {
   const location = useLocation();
+  
+  useEffect(() => {
+    logger.info(`渲染AppSidebar组件, 当前路径: ${location.pathname}`);
+  }, [location.pathname]);
   
   const menuItems = [
     {
@@ -45,15 +50,32 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed, setCollapsed }) => {
     <Sider
       collapsible
       collapsed={collapsed}
-      onCollapse={setCollapsed}
+      onCollapse={(value) => {
+        logger.info(`侧边栏折叠状态切换: ${value ? '折叠' : '展开'}`);
+        setCollapsed(value);
+      }}
       style={{ background: '#001529' }}
     >
-      <div className="logo">TalentScout</div>
+      <div style={{ 
+        height: '64px', 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: '#fff',
+        fontSize: collapsed ? '14px' : '18px',
+        fontWeight: 'bold',
+        overflow: 'hidden'
+      }}>
+        {collapsed ? 'TS' : 'TalentScout'}
+      </div>
       <Menu
         theme="dark"
         mode="inline"
         selectedKeys={[location.pathname]}
         items={menuItems}
+        onClick={(e) => {
+          logger.info(`菜单项点击: ${e.key}`);
+        }}
       />
     </Sider>
   );

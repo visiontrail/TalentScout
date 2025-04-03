@@ -59,3 +59,16 @@ TalentScout/
    - UI/UX优化
    - 性能优化
    - 安全性增强
+
+## 快速开始
+### Server端运行
+```shell
+cd server
+python3 main.py
+```
+
+### Client端运行
+```shell
+cd client
+npm run start
+```
